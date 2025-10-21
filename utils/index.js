@@ -1,4 +1,4 @@
-const db = require("../services/firestoreService");
+const {db} = require("../services/firestoreService");
 
 
 const batchGetAnimals = async (animalIds) => {
