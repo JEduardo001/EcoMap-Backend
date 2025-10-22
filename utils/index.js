@@ -42,14 +42,13 @@ const batchGetCategories = async (categoryIds) => {
     }
 
     return categoriesData;
-};
+}; 
 
-
-const combineData = (markers, animalsData, categoriesData) => {
+const combineData = (markers, animalsData) => {
     return markers.map(marker => ({
       ...marker,
       animal: animalsData[marker.idAnimal] || null,
-      category: categoriesData[marker.idCategory] || null
+     // category: categoriesData[marker.idCategory] || null
     }));
   
 }

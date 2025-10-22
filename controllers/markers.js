@@ -1,4 +1,5 @@
-const { batchGetAnimals, batchGetCategories,combineData, getUniqueIdsAnimalsAndCategories } = require("../utils/index.js");
+
+const { batchGetAnimals,batchGetCategories, combineData, getUniqueIdsAnimalsAndCategories } = require("../utils/index.js");
 
 const { admin, bucket, db } = require('../services/firestoreService.js');
 
@@ -48,17 +49,14 @@ const getMarkers = async (req, res) => {
 
     // Obtener IDs únicos de animales y categorías 
     const dataIds = getUniqueIdsAnimalsAndCategories(markers);
-
     // Batch get animales
     const animalsData = await batchGetAnimals(dataIds.animalIds);
-        console.log("3333")
-
+       
     // Batch get categorías
-    const categoriesData = await batchGetCategories(dataIds.categoryIds);
+    //const categoriesData = await batchGetCategories(dataIds.categoryIds);
 
     // Combinar datos con markers
-    const markersWithDetails = await combineData(markers, animalsData, categoriesData);
-
+    const markersWithDetails = await combineData(markers, animalsData);
     res.json({
         status: 200,
         data: markersWithDetails
@@ -75,7 +73,7 @@ const getMarkersByFilter = async (req, res) => {
     
     const snapshot = await db
     .collection("markersMap")
-    .where("typeLife.id", "==", filterId)
+    .where("category.id", "==", filterId)
     .get();
     const markers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
@@ -100,7 +98,7 @@ const getMarkersByFilter = async (req, res) => {
 
 const submitImage = (file) => {
   return new Promise((resolve, reject) => {
-    const imageName = `markets/${uuidv4()}_${file.originalname}`;
+    const imageName = `markets/${file.originalname}`;
     const blob = bucket.file(imageName);
     const blobStream = blob.createWriteStream({
       metadata: {
@@ -128,16 +126,16 @@ const submitImage = (file) => {
 };
 
 
-const createAnimal = async (description,name,urlImage,typeLife) => {
+const createAnimal = async (description,name,urlImage,category) => {
     try{
         console.log("entre al endpoint")
        const docRef = await admin.firestore().collection('animals').add({
         name,
         description,
         urlImage: urlImage,
-        typeLife: {
-            id: typeLife.id,
-            name: typeLife.name
+        category: {
+            id: category.id,
+            name: category.name
         },
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
@@ -163,76 +161,60 @@ const createAnimal = async (description,name,urlImage,typeLife) => {
 }
 
 
-const getDataTypeLife = async (categoryId) => {
+const getDataCategory = async (categoryId) => {
     try{
-       const docRef = admin.firestore().collection('typeLife').doc(categoryId);
-        const docSnap = await docRef.get();
+       const docRef = admin.firestore().collection('category').doc(categoryId);
+       const docSnap = await docRef.get();
 
-        if (docSnap.exists) {
-            const data = docSnap.data();
-            console.log('Datos del documento:', data);
-
-            return data
-        }
-        return null
-
+      if (docSnap.exists) {
+          const data = docSnap.data();
+          return data
+      }
+      return null
     }catch(error){
-        console.error("Error al crear el animal", error)
+      console.log("Error obtener la categoria", error)
     }
 }
 
 
-const createMarket = async (req,res) => {
- try {
-    console.log("Entre a crear imagen")
+const createMarket = async (req, res) => {
+  try {
     const { name, description, category, latitude, longitude } = req.body;
     const file = req.file;
-    console.log("image: ", file)
-    if (!file) {
-      return res.status(400).json({ error: 'No se recibió imagen' });
-    }
 
-    const urlImage = await submitImage(file)
+    if (!file) return res.status(400).json({ error: "No se recibió imagen" });
 
-    if(!urlImage){
-        throw Error()
-    }
+    const urlImage = await submitImage(file);
+    if (!urlImage) throw Error("Error al subir la imagen");
 
-    const dateTypeLife = await getDataTypeLife(category)
+    const dataCategory = await getDataCategory(category);
+    if (!dataCategory) throw Error("Error al obtener el tipo de vida");
 
-    if(!dateTypeLife){
-        throw Error()
-    }
-
-    const animalData = await createAnimal(description,name,urlImage,dateTypeLife)
+    const animalData = await createAnimal(description, name, urlImage, dataCategory);
 
     const docRef = await admin.firestore().collection('markersMap').add({
-        name,
-        description,
-        idAnimal,
-        coordinate: {
-            latitude: parseFloat(latitude),
-            longitude: parseFloat(longitude),
-        },
-        typeLife: {
-            id: animalData.typeLife.id,
-            name: animalData.typeLife.name
-        },
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      name,
+      description,
+      idAnimal: animalData.id,
+      coordinate: {
+        latitude: parseFloat(latitude),
+        longitude: parseFloat(longitude),
+      },
+      category: {
+        id: animalData.category.id,
+        name: animalData.category.name,
+      },
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    const id = docRef.id
-    const fieldId = { id: id };
+    await admin.firestore().collection('markersMap').doc(docRef.id).update({ id: docRef.id }); 
 
-    await admin.firestore().collection('markersMap').doc(id).update(fieldId);
-
-    res.status(200).json({ message: 'Marcador Creado' });
-
+    res.status(200).json({ message: "Marcador Creado", id: docRef.id });
   } catch (error) {
     console.error('Error en createMarket:', error);
-    res.status(500).json({ message: 'Ocurrio un error al crear el marcador' });
+    res.status(500).json({ message: "Ocurrió un error al crear el marcador" });
   }
-}
+};
 
 
 module.exports = { getMarkers, getMarkersByFilter, createMarket};

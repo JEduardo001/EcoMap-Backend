@@ -1,4 +1,4 @@
-const db = require("../services/firestoreService");
+const {db} = require("../services/firestoreService");
 
 
 const getSpecies = async (req, res) => {
@@ -7,7 +7,7 @@ const getSpecies = async (req, res) => {
     const snapshot = await db.collection("animals").get();
 
     const animals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  
+
     res.json({
         status: 200,
         data: animals

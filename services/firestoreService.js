@@ -4,7 +4,7 @@ const serviceAccount = require("../serviceAccountKey.json");
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    storageBucket: 'ecomap-85618.appspot.com',
+    storageBucket: 'gs://ecomap-85618.firebasestorage.app',
   });
 }
 
