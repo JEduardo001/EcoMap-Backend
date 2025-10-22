@@ -126,9 +126,8 @@ const submitImage = (file) => {
 };
 
 
-const createAnimal = async (description,name,urlImage,category) => {
+const createAnimal = async (description,name,urlImage,category,listCuriousThings) => {
     try{
-        console.log("entre al endpoint")
        const docRef = await admin.firestore().collection('animals').add({
         name,
         description,
@@ -137,6 +136,7 @@ const createAnimal = async (description,name,urlImage,category) => {
             id: category.id,
             name: category.name
         },
+        curiousThings: listCuriousThings,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
 
@@ -179,18 +179,20 @@ const getDataCategory = async (categoryId) => {
 
 const createMarket = async (req, res) => {
   try {
-    const { name, description, category, latitude, longitude } = req.body;
+    const { name, description, category, latitude, longitude,listCuriousThings } = req.body;
     const file = req.file;
+    var urlImage = ""
+    if (file){
+      urlImage = await submitImage(file);
+      if (!urlImage) throw Error("Error al subir la imagen");
+    }
 
-    if (!file) return res.status(400).json({ error: "No se recibió imagen" });
-
-    const urlImage = await submitImage(file);
-    if (!urlImage) throw Error("Error al subir la imagen");
-
+   
+    console.log("lista de dentro de create marker", listCuriousThings)
     const dataCategory = await getDataCategory(category);
     if (!dataCategory) throw Error("Error al obtener el tipo de vida");
 
-    const animalData = await createAnimal(description, name, urlImage, dataCategory);
+    const animalData = await createAnimal(description, name, urlImage, dataCategory,listCuriousThings);
 
     const docRef = await admin.firestore().collection('markersMap').add({
       name,
