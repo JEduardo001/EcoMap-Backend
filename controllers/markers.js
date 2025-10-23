@@ -179,7 +179,9 @@ const getDataCategory = async (categoryId) => {
 
 const createMarket = async (req, res) => {
   try {
-    const { name, description, category, latitude, longitude,listCuriousThings } = req.body;
+    const { name, description, category, latitude, longitude } = req.body;
+    const listCuriousThings = JSON.parse(req.body.listCuriousThings);
+
     const file = req.file;
     var urlImage = ""
     if (file){

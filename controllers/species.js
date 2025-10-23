@@ -22,7 +22,7 @@ const getSpeciesByFilter = async (req, res) => {
     
     const snapshot = await db
     .collection("animals")
-    .where("typeLife.id", "==", filterId)
+    .where("category.id", "==", filterId)
     .get();
     const animals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
