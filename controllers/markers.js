@@ -190,7 +190,6 @@ const createMarket = async (req, res) => {
     }
 
    
-    console.log("lista de dentro de create marker", listCuriousThings)
     const dataCategory = await getDataCategory(category);
     if (!dataCategory) throw Error("Error al obtener el tipo de vida");
 
